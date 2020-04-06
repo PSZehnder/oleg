@@ -1,11 +1,10 @@
 import subprocess
-import visdom
 import numpy as np
+import visdom
 
 def launch_visdom(use_visdom=True, port=8067):
     if use_visdom or use_visdom is None:
         try:
-            import visdom
             subprocess.Popen('python -m visdom.server -port %d' % port)
         except ImportError:
             pass

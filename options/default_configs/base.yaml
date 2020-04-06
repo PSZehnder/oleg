@@ -1,14 +1,18 @@
 # TODO: add build filepath.sh
 
+name: 'DEFAULT_CONFIG'
 visdom:
   use_visdom: True
   port: 8067
+  avg: True
+  var: True
 
 optimizer:
   learning_rate:
     max_lr: 10e-4
     scheduler:
       name: exponential
+      args: ~
   name: 'RMSprop'
   args: ~ # you can specify all the extra args here, but I just rock the defaults
 
@@ -25,6 +29,7 @@ training:
   gamma: 0.999
 
 io:
+  avg_window: 100
   render:
     render_frequency: 100
     render_path: ~ # these need to be filled in
