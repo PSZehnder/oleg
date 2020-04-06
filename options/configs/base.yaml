@@ -1,0 +1,33 @@
+# TODO: add build filepath.sh
+
+visdom:
+  use_visdom: True
+  port: 8067
+
+optimizer:
+  learning_rate:
+    max_lr: 10e-4
+    scheduler:
+      name: exponential
+  name: 'RMSprop'
+  args: ~ # you can specify all the extra args here, but I just rock the defaults
+
+training:
+  # general machine learning stuff
+  epochs: 1000
+  loss: mse
+  batch_size: 16
+  device: ~ # default is to just check for cuda
+
+  memory_len: 10000
+  max_epsilon: 1
+  min_epsilon: 0.5
+  gamma: 0.999
+
+io:
+  render:
+    render_frequency: 100
+    render_path: ~ # these need to be filled in
+  save:
+    save_frequency: 100
+    save_path: ~ # these need to be filled in
