@@ -1,7 +1,7 @@
 # OLEG
 reinforcement learning library
 
-##*This repo is very much a work in progress*
+*This repo is very much a work in progress*
 
 # What (or rather who) is OLEG?
 When I started this project, I was solving 3dTetris and wanted a name for my bot. My Dad suggested Oleg, after his Russian
