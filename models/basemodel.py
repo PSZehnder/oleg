@@ -1,6 +1,5 @@
 import torch.nn as nn
 import copy
-import torch
 from utils import *
 
 def build_model(configfile):
@@ -19,6 +18,22 @@ class BaseModel(nn.Module):
         new_model = copy.deepcopy(self)
         return new_model.load_state_dict(self.state_dict())
 
-    def choose_action(self, state):
-        raise NotImplementedError
+    # by default is the identity function
+    def preprocess_state(self, state):
+        return state
 
+    def __call__(self, state):
+        state = self.preprocess_state(state)
+        output = super(BaseModel, self).__call__(state)
+        return output
+
+class WrappedModel(BaseModel):
+
+    def __init__(self, model):
+        super(WrappedModel, self). __init__()
+        self.model = model
+
+    def __call__(self, state):
+        state = self.preprocess_state(state)
+        output = self.model(state)
+        return output

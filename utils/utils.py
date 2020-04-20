@@ -3,8 +3,10 @@ import torch.optim as optim
 import torch.nn as nn
 import os
 import torch
-from learners import Transition
 from statistics import variance
+from collections import namedtuple
+
+Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward', 'done'))
 
 # convert strings to their pytorch objects
 def _tryoptim(params, lr, optfunc, **kwargs):
@@ -30,7 +32,7 @@ def getoptimizer(params, lr, name=None, **kwargs):
     if name.lower() == 'lbfgs':
         optimizer = _tryoptim(params, lr=lr, optfunc=optim.LBFGS, **kwargs)
     if name.lower() == 'rmsprop':
-        optimizer = _tryoptim(params, lr=lr, optfunc=optim.RMSProp, **kwargs)
+        optimizer = _tryoptim(params, lr=lr, optfunc=optim.RMSprop, **kwargs)
     if name.lower() == 'sgd':
         optimizer = _tryoptim(params, lr=lr, optfunc=optim.SGD, **kwargs)
     return name, optimizer
@@ -63,16 +65,19 @@ def getloss(name):
         loss = nn.SmoothL1Loss()
     return loss
 
-# print nested args in a pretty way
 def printargs(args, tabs=4, depth=0):
-    out_str = ''
-    for k, v in args.items():
-        if not isinstance(v, dict):
-            out_str += '\t' * depth + '%s: ' % k + str(v) + '\n'
-        else:
-            out_str += '\t' * depth + '%s: ' % k + '\n'
-            out_str += printargs(v, tabs, depth=depth + 1)
-    return out_str.expandtabs(tabs)
+    # print nested args in a pretty way
+    def _buildargs(args, tabs, depth):
+        out_str = ''
+        for k, v in args.items():
+            if not isinstance(v, dict):
+                out_str += '\t' * depth + '%s: ' % k + str(v) + '\n'
+            else:
+                out_str += '\t' * depth + '%s: ' % k + '\n'
+                out_str += _buildargs(v, tabs, depth=depth + 1)
+        return out_str.expandtabs(tabs)
+
+    print(_buildargs(args, tabs, depth))
 
 # get most recent file from folder
 def mostrecent(folder):
@@ -81,10 +86,10 @@ def mostrecent(folder):
     return files[0]
 
 # turn Transition to tensor
-def trans2tens(transition):
+def trans2tens(transition, device=torch.device('cpu')):
     out = []
     for item in transition:
-        out.append(torch.tensor(item))
+        out.append(torch.tensor(item, device=device))
     return Transition(*out)
 
 # take rolling average with sliding window. returns list of same shape
@@ -146,15 +151,5 @@ class Logger:
         epoch = len(self.data[self._keyorder[0]][self._keyorder[0]])
         out_str = 'epoch: %s ' % epoch
         for name in self._keyorder:
-            out_str += '%s: %s ' %(name, self.data[name][name][-1])
+            out_str += '%s: %.3f ' %(name, self.data[name][name][-1])
         return out_str
-
-
-
-
-
-
-
-
-
-

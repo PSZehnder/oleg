@@ -10,9 +10,11 @@ class Learner:
     def __init__(self, simualtor, model, options=None):
 
         if options is None:
-            self.options = Options()
+            self.options = Options().args
         else:
             self.options = options
+
+        printargs(self.options)
 
         self.model = model
 
@@ -20,7 +22,8 @@ class Learner:
 
         # set up optimizer
         optimizer_args = self.options['optimizer']
-        self.max_lr = self.options['learning_rate']['max_lr']
+        self.max_lr = optimizer_args['learning_rate']['max_lr']
+        self.min_lr = optimizer_args['learning_rate']['min_lr']
         self._initoptim(optimizer_args)
 
         # set up training args
@@ -32,6 +35,7 @@ class Learner:
         self.memory = ReplayBuffer(training_args['memory_len'])
         self.explore_val = training_args['max_epsilon']
         self.min_explore_val = training_args['min_epsilon']
+        self.explore_decay = training_args['epsilon_decay']
         self.gamma = training_args['gamma']
 
         # detect device
@@ -43,7 +47,9 @@ class Learner:
         else:
             self.device = torch.device(training_args['device'])
 
-        # io considerations; frequencies are in
+        self.model = self.model.to(self.device)
+
+        # io considerations; frequencies are in epochs
         io_args = self.options['io']
         self.render_path = io_args['render']['render_path']
         self.render_frequency = io_args['render']['render_frequency']
@@ -51,6 +57,11 @@ class Learner:
         self.weights_path = io_args['save']['save_path']
 
         self.avg_window = io_args['avg_window']
+
+        if self.render_path is None:
+            self.render_path = self.name + '_latest/render'
+        if self.weights_path is None:
+            self.weights_path = self.name + '_latest/weights'
 
         for path in (self.weights_path, self.render_path):
             os.makedirs(path, exist_ok=True)
@@ -65,8 +76,10 @@ class Learner:
         self.use_visdom = vis_args['use_visdom']
         self.visdom_avg = vis_args['avg']
         self.visdom_var = vis_args['var']
-        launch_visdom(self.use_visdom, self.port)
-
+        try:
+            launch_visdom(self.use_visdom, self.port)
+        except:
+            print('failed to launch visdom. Try again with: \npython -m visdom.server -port %d' % self.port)
         # set up logger
         self.logger = Logger(['loss', 'reward', 'game_len'], avg=self.visdom_avg, var=self.visdom_var)
 
@@ -79,14 +92,19 @@ class Learner:
 
     def _initoptim(self, argsdict):
         if isinstance(argsdict['args'], dict):
-            self.optimizer_name, self.optimizer = getoptimizer(self.model, lr=self.max_lr, name=argsdict['name'],
+            self.optimizer_name, self.optimizer = getoptimizer(self.model.parameters(), lr=self.max_lr, name=argsdict['name'],
                                                                **argsdict['args'])
         else:
-            self.optimizer_name, self.optimizer = getoptimizer(self.model, lr=self.max_lr, name=argsdict['name'])
-        self.scheduler_name, self.scheduler = getscheduler(self.optimizer, argsdict['learning_rate']['scheduler'])
+            self.optimizer_name, self.optimizer = getoptimizer(self.model.parameters(), lr=self.max_lr, name=argsdict['name'])
+        schedule_args = argsdict['learning_rate']['scheduler']
+        self.scheduler_name, self.scheduler = getscheduler(self.optimizer)
 
     def render(self, epoch):
         raise NotImplementedError
+
+    def clampgrad(self, params):
+        for param in params:
+            param.grad.data.clamp_(-1, 1)
 
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward', 'done'))
 

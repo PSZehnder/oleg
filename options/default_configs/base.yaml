@@ -9,7 +9,8 @@ visdom:
 
 optimizer:
   learning_rate:
-    max_lr: 10e-4
+    max_lr: 10.0e-4
+    min_lr: 10.0e-8
     scheduler:
       name: exponential
       args: ~
@@ -26,13 +27,15 @@ training:
   memory_len: 10000
   max_epsilon: 1
   min_epsilon: 0.5
+  epsilon_decay: 0.995
   gamma: 0.999
 
+# if paths are none, will auto create file structure for recent run
 io:
   avg_window: 100
   render:
     render_frequency: 100
-    render_path: ~ # these need to be filled in
+    render_path: ~
   save:
     save_frequency: 100
-    save_path: ~ # these need to be filled in
+    save_path: ~

@@ -1,6 +1,9 @@
 import subprocess
 import numpy as np
 import visdom
+import os
+
+EXTENSIONS = ['.mp4']
 
 def launch_visdom(use_visdom=True, port=8067):
     if use_visdom or use_visdom is None:
@@ -9,7 +12,6 @@ def launch_visdom(use_visdom=True, port=8067):
         except ImportError:
             pass
 
-# from https://github.com/noagarcia/visdom-tutorial
 class VisdomDictPlotter:
 
     def __init__(self, env_name='main'):
@@ -18,6 +20,8 @@ class VisdomDictPlotter:
         self.plots = {}
 
     # dict should be formatted e.g. {'loss' : {'gan_loss': x, 'discriminator': y}}
+
+    # from https://github.com/noagarcia/visdom-tutorial
     def plot(self, dct):
         for k, v in dct.items():
             if isinstance(v, dict):
@@ -47,3 +51,21 @@ class VisdomDictPlotter:
             for k, v in lines_dict:
                 self.viz.line(Y=np.array([v[-1], v[-1]]), X=np.array([len(v), len(v)]),
                               env=self.env, win=self.plots[name], update='append')
+
+class VisdomVideoPlotter:
+
+    # savepath is path to video to render. By default none and will infer
+    def __init__(self, env_name, savepath=None):
+        self.viz = visdom.Visdom()
+        self.env = env_name
+        self.savepath = savepath
+
+    def update(self, path=None):
+        if path is None:
+            return
+        else:
+            for file in os.listdir(path):
+                if any([file.endswith(ext) for ext in EXTENSIONS]):
+                    video = file
+        print('loading recent sim from %s' % video)
+        self.viz.video(video)
