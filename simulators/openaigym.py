@@ -1,6 +1,7 @@
 import gym
 from .basesimulator import Simulator
 import torch
+import os
 
 class GymSimulator(Simulator):
 
@@ -22,14 +23,17 @@ class GymSimulator(Simulator):
 
     def render(self, model, path=None):
         if path:
-            self.sim = gym.wrappers.Monitor(self.sim, path)
+            if not os.path.exists(path):
+                os.makedirs(path)
+            self.sim = gym.wrappers.Monitor(self.sim, path, force=True)
+            self.reset()
         if not isinstance(model, torch.nn.Module):
             model = torch.load(model)
         while not self.done:
-            action = model(self.state)
+            action = torch.argmax(model(self.preprocess(self.state)), dim=0).cpu().numpy()
             self.update(action)
         self.sim.close()
-        self.sim = self.sim.make(self.name)
+        self.sim = gym.make(self.name)
 
     def rand_action(self):
         return self.sim.action_space.sample()

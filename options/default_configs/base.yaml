@@ -3,39 +3,39 @@
 name: 'DEFAULT_CONFIG'
 visdom:
   use_visdom: True
-  port: 8067
-  avg: True
-  var: True
+  port: 8097
+  avg: False
+  var: False
 
 optimizer:
   learning_rate:
     max_lr: 10.0e-4
-    min_lr: 10.0e-8
+    min_lr: 10.0e-16
     scheduler:
       name: exponential
-      args: ~
-  name: 'RMSprop'
+      gamma: 0.6
+  name: 'rmsprop'
   args: ~ # you can specify all the extra args here, but I just rock the defaults
 
 training:
   # general machine learning stuff
   epochs: 1000
   loss: mse
-  batch_size: 16
+  batch_size: 128
   device: ~ # default is to just check for cuda
 
   memory_len: 10000
   max_epsilon: 1
-  min_epsilon: 0.5
-  epsilon_decay: 0.995
+  min_epsilon: 0.05
+  epsilon_decay: 0.95
   gamma: 0.999
 
 # if paths are none, will auto create file structure for recent run
 io:
   avg_window: 100
   render:
-    render_frequency: 100
+    render_frequency: 50
     render_path: ~
   save:
-    save_frequency: 100
+    save_frequency: 50
     save_path: ~

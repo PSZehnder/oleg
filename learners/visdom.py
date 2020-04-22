@@ -40,15 +40,19 @@ class VisdomDictPlotter:
 
     def _plot_multiple(self, name, lines_dict):
         if name not in self.plots:
-            for k, v in lines_dict:
-                self.plots[name] = self.viz.lines(X=np.array[0, 0], Y=np.array([v[0], v[0]]),
+            for k, v in lines_dict.items():
+                if not len(v):
+                    continue
+                self.plots[name] = self.viz.line(X=np.array([0, 0]), Y=np.array([v[0], v[0]]),
                                                    env=self.env, opts=dict(
-                            legend=[k],
+                            ylabel=k,
                             title=name,
                             xlabel='Epochs',
                         ))
         else:
-            for k, v in lines_dict:
+            for k, v in lines_dict.items():
+                if not len(v):
+                    continue
                 self.viz.line(Y=np.array([v[-1], v[-1]]), X=np.array([len(v), len(v)]),
                               env=self.env, win=self.plots[name], update='append')
 
@@ -61,11 +65,12 @@ class VisdomVideoPlotter:
         self.savepath = savepath
 
     def update(self, path=None):
+        return # TODO FIx
         if path is None:
             return
         else:
             for file in os.listdir(path):
                 if any([file.endswith(ext) for ext in EXTENSIONS]):
                     video = file
-        print('loading recent sim from %s' % video)
-        self.viz.video(video)
+        print('loading recent sim from %s' % os.path.join(path, video))
+        self.viz.video(videofile=os.path.join(path, video))

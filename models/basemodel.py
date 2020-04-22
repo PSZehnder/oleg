@@ -16,7 +16,7 @@ class BaseModel(nn.Module):
 
     def copy(self):
         new_model = copy.deepcopy(self)
-        return new_model.load_state_dict(self.state_dict())
+        return new_model
 
     # by default is the identity function
     def preprocess_state(self, state):

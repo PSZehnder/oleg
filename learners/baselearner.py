@@ -17,6 +17,7 @@ class Learner:
         printargs(self.options)
 
         self.model = model
+        self.model = self.model.double()
 
         self.name = self.options['name']
 
@@ -31,6 +32,7 @@ class Learner:
         self.num_epochs = training_args['epochs']
         self.loss_func = training_args['loss']
         self.batch_size = training_args['batch_size']
+        self.loss_func = getloss(self.loss_func)
 
         self.memory = ReplayBuffer(training_args['memory_len'])
         self.explore_val = training_args['max_epsilon']
@@ -76,17 +78,14 @@ class Learner:
         self.use_visdom = vis_args['use_visdom']
         self.visdom_avg = vis_args['avg']
         self.visdom_var = vis_args['var']
-        try:
-            launch_visdom(self.use_visdom, self.port)
-        except:
-            print('failed to launch visdom. Try again with: \npython -m visdom.server -port %d' % self.port)
+
         # set up logger
         self.logger = Logger(['loss', 'reward', 'game_len'], avg=self.visdom_avg, var=self.visdom_var)
 
     def update_scheduler(self, loss=None):
         if self.scheduler_name == 'plateau':
             self.scheduler.step(loss)
-        else:
+        elif self.scheduler is not None:
             self.scheduler.step()
 
 
@@ -97,7 +96,13 @@ class Learner:
         else:
             self.optimizer_name, self.optimizer = getoptimizer(self.model.parameters(), lr=self.max_lr, name=argsdict['name'])
         schedule_args = argsdict['learning_rate']['scheduler']
-        self.scheduler_name, self.scheduler = getscheduler(self.optimizer)
+        try:
+            name = schedule_args['name']
+            del schedule_args['name']
+        except:
+            name = None
+
+        self.scheduler_name, self.scheduler = getscheduler(self.optimizer, name, **schedule_args)
 
     def render(self, epoch):
         raise NotImplementedError
@@ -116,11 +121,11 @@ class ReplayBuffer:
         self.memory = []
         self.position = 0
 
-    def push(self, *args):
+    def push(self, trans):
         """Saves a transition."""
         if len(self.memory) < self.capacity:
             self.memory.append(None)
-        self.memory[self.position] = Transition(*args)
+        self.memory[self.position] = trans
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):

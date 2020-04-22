@@ -49,7 +49,7 @@ def getscheduler(optimizer, name=None, **kwargs):
     if name.lower() == 'cosine':
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, **kwargs)
     if name.lower() == 'plateau':
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, **kwargs)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True)
     if name.lower() == 'cyclic':
         scheduler = optim.lr_scheduler.CyclicLR(optimizer, **kwargs)
     return name, scheduler
@@ -63,6 +63,8 @@ def getloss(name):
         loss = nn.L1Loss()
     if name.lower() == 'smoothl1':
         loss = nn.SmoothL1Loss()
+    else:
+        return  nn.MSELoss()
     return loss
 
 def printargs(args, tabs=4, depth=0):
@@ -89,7 +91,10 @@ def mostrecent(folder):
 def trans2tens(transition, device=torch.device('cpu')):
     out = []
     for item in transition:
-        out.append(torch.tensor(item, device=device))
+        if not isinstance(item, torch.Tensor):
+            out.append(torch.tensor(item, device=device))
+        else:
+            out.append(item.to(device))
     return Transition(*out)
 
 # take rolling average with sliding window. returns list of same shape
@@ -136,9 +141,9 @@ class Logger:
     def update(self, *elems):
         for i, name in enumerate(self._keyorder):
             self.data[name][name].append(elems[i])
-            if self.do_avg:
+            if self.do_avg and len(self.data[name][name]) >= 3:
                 self.data[name]['avg'] = rollingaverage(self.data[name][name], self.window)
-            if self.do_var:
+            if self.do_var and len(self.data[name][name]) >= 3:
                 self.data[name]['var'] = rollingvariance(self.data[name][name], self.window)
 
     def __getitem__(self, item):
