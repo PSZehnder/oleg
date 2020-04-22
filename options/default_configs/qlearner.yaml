@@ -1,4 +1,4 @@
 training:
   batches: 3
   episode_update: 0 # if less than 1, update after each action, else after this many epochs
-  target_update: 25 # if less than 1, dont use a target network
+  target_update: 0 # if less than 1, dont use a target network
