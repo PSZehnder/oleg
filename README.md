@@ -1,4 +1,4 @@
-# OLEG
+#oleg
 reinforcement learning library
 
 *This repo is very much a work in progress*
@@ -11,8 +11,8 @@ OLEG is a complete rewrite of my original [DeepTetris3d](https://github.com/PSZe
 
 # Intended features (strikethrough denotes ~done~)
 + Automatic architecture selection for OpenAI Gyms
-+ Support for all OpenAI Gyms
-+ Extensible classes/API
++ ~Support for all OpenAI Gyms~
++ ~Extensible classes/API~
 + Whole bunch of reinforcement learning algorithms (~DQN~, ~Double DQN~, Dueling Q, SARSA, TD3, etc.)
 + Non reinforcement learning algorithms (minimax/montecarlo)
 + Prioritized experience replay
