@@ -1,4 +1,4 @@
-#oleg
+# oleg
 reinforcement learning library
 
 *This repo is very much a work in progress*
