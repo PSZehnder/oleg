@@ -1,5 +1,4 @@
 import abc
-import torch
 
 class Simulator(abc.ABC):
 
@@ -20,5 +19,5 @@ class Simulator(abc.ABC):
         pass
 
     def preprocess(self, state):
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        return torch.tensor(state, device=device)
+        return state
+

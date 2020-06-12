@@ -97,6 +97,14 @@ def trans2tens(transition, device=torch.device('cpu')):
             out.append(item.to(device))
     return Transition(*out)
 
+# find filetype
+def findfiletype(ftype, path):
+    out = []
+    for file in os.listdir(path):
+        if file.endswith(ftype):
+            out.append[file]
+    return out
+
 # take rolling average with sliding window. returns list of same shape
 def rollingaverage(lst, window=100):
     out = lst.copy()

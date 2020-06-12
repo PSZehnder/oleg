@@ -1,6 +1,6 @@
 # TODO: add build filepath.sh
 
-name: 'cartpole'
+name: 'cartpole_finetune'
 visdom:
   use_visdom: True
   port: 8097
@@ -9,17 +9,19 @@ visdom:
 
 optimizer:
   learning_rate:
-    max_lr: 0.001
+    max_lr: 0.0001
     min_lr: 10.0e-16
     reset_on_update: False
     scheduler:
+      name: exponential
+      gamma: 1
   name: 'adam'
-  args:
+  args: ~ # you can specify all the extra args here, but I just rock the defaults
 
 training:
   # general machine learning stuff
   epochs: 10000
-  loss: huber
+  loss: mse
   batch_size: 128
   device: ~ # default is to just check for cuda
 
@@ -27,19 +29,18 @@ training:
   episode_update: 0 # if less than 1, update after each action, else after this many epochs
   target_update: 50 # if less than 1, dont use a target network
 
-  memory_len: 10000
-  gamma: 0.99
-  max_epsilon: 1
+  memory_len: 500000
+  max_epsilon: 0.05
   min_epsilon: 0.05
-  epsilon_decay: 0.92
-
+  epsilon_decay: 0.999
+  gamma: 0.999
 
 # if paths are none, will auto create file structure for recent run
 io:
   avg_window: 100
   render:
-    render_frequency: 100
+    render_frequency: 500
     render_path: ~
   save:
-    save_frequency: 100
+    save_frequency: 500
     save_path: ~

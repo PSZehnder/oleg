@@ -1,0 +1,3 @@
+[submodule "simulators/tetris"]
+	path = simulators/tetris
+	url = https://github.com/PSZehnder/PyTetris

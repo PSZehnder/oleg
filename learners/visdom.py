@@ -14,8 +14,11 @@ def launch_visdom(use_visdom=True, port=8067):
 
 class VisdomDictPlotter:
 
-    def __init__(self, env_name='main'):
-        self.viz = visdom.Visdom()
+    def __init__(self, env_name='main', session=None):
+        if session is None:
+            self.viz = visdom.Visdom()
+        else:
+            self.viz = session
         self.env = env_name
         self.plots = {}
 
@@ -59,13 +62,17 @@ class VisdomDictPlotter:
 class VisdomVideoPlotter:
 
     # savepath is path to video to render. By default none and will infer
-    def __init__(self, env_name, savepath=None):
-        self.viz = visdom.Visdom()
+    def __init__(self, env_name, savepath=None, session=None):
+        if session is None:
+            self.viz = visdom.Visdom()
+        else:
+            self.viz = session
         self.env = env_name
         self.savepath = savepath
+        self.loaded = False
 
     def update(self, path=None):
-        return # TODO FIx
+        return # TODO: fix!
         if path is None:
             return
         else:
@@ -73,4 +80,9 @@ class VisdomVideoPlotter:
                 if any([file.endswith(ext) for ext in EXTENSIONS]):
                     video = file
         print('loading recent sim from %s' % os.path.join(path, video))
-        self.viz.video(videofile=os.path.join(path, video))
+        if self.loaded == False:
+            self.video = self.viz.video(videofile=os.path.join(path, video), env=self.env)
+            self.loaded = True
+        else:
+            self.viz.close(self.video)
+            self.video = self.viz.video(videofile=os.path.join(path, video), env=self.env)

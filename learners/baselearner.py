@@ -17,7 +17,6 @@ class Learner:
         printargs(self.options)
 
         self.model = model
-        self.model = self.model.double()
 
         self.name = self.options['name']
 
@@ -43,13 +42,11 @@ class Learner:
         # detect device
         if training_args['device'] is None:
             if torch.cuda.is_available():
-                self.device = torch.device('cuda')
+                self.model.device = torch.device('cuda')
             else:
-                self.device = torch.device('cpu')
+                self.model.device = torch.device('cpu')
         else:
-            self.device = torch.device(training_args['device'])
-
-        self.model = self.model.to(self.device)
+            self.model.device = torch.device(training_args['device'])
 
         # io considerations; frequencies are in epochs
         io_args = self.options['io']
@@ -88,7 +85,6 @@ class Learner:
         elif self.scheduler is not None:
             self.scheduler.step()
 
-
     def _initoptim(self, argsdict):
         if isinstance(argsdict['args'], dict):
             self.optimizer_name, self.optimizer = getoptimizer(self.model.parameters(), lr=self.max_lr, name=argsdict['name'],
@@ -101,15 +97,16 @@ class Learner:
             del schedule_args['name']
         except:
             name = None
+            schedule_args = {}
 
         self.scheduler_name, self.scheduler = getscheduler(self.optimizer, name, **schedule_args)
 
+    def set_lr(self, lr):
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
     def render(self, epoch):
         raise NotImplementedError
-
-    def clampgrad(self, params):
-        for param in params:
-            param.grad.data.clamp_(-1, 1)
 
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward', 'done'))
 

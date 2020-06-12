@@ -6,12 +6,16 @@ import torch
 from .visdom import VisdomDictPlotter, VisdomVideoPlotter
 import time
 import random
+import numpy as np
 
 class DeepQLearner(Learner):
 
     def __init__(self, simulator, model, optionspath=None):
         options = QLearnerOptions(optionspath).args
         super(DeepQLearner, self).__init__(simulator, model, options)
+
+        # reset lr on target network update
+        self.reset_on_target_update = self.options['optimizer']['learning_rate']['reset_on_update']
 
         target_options = self.options['training']
         self.target_options = target_options
@@ -30,7 +34,7 @@ class DeepQLearner(Learner):
             plotter = VisdomDictPlotter(env_name=self.name)
 
             global simplotter
-            simplotter = VisdomVideoPlotter(env_name=self.name) # DIS KINDA BROKE
+            simplotter = VisdomVideoPlotter(env_name=self.name, session=plotter.viz) # DIS KINDA BROKE
 
     def update_target(self, epoch):
         if self.target_update <= 0:
@@ -41,13 +45,14 @@ class DeepQLearner(Learner):
 
         elif epoch % self.target_update == 0:
             self.target_model = self.model.copy()
+            if self.reset_on_target_update:
+                self.set_lr(self.max_lr)
 
     def save_model(self, epoch):
         if (epoch + 1 ) % self.save_frequency == 0:
             torch.save(self.model, osp.join(self.weights_path, '%s_epoch_%s.pth' % (self.name, epoch)))
 
     def train(self):
-        printargs(self.target_options)
         print('----- BEGIN Q LEARNING ----- \n')
 
         for i in range(self.num_epochs):
@@ -78,23 +83,26 @@ class DeepQLearner(Learner):
                 trans = Transition(state, action, next_state, reward, done)
 
                 # can update while playing like in the Nature paper
-                self.memory.push(trans2tens(trans, device=self.device))
-                if self.episode_update <= 1:
+                self.memory.push(trans2tens(trans, device=self.model.device))
+                if self.episode_update < 1:
                     cum_loss += self.memory_replay(self.batch_size, self.batches)
 
             # can update after playing (this can be more efficient for GPU with lots of RAM)
             if self.episode_update >= 1:
                 if (i + 1) % self.episode_update == 0:
-                    cum_loss += self.memory_replay(self.batch_size, self.batches)
-                    cum_loss = cum_loss / self.batches
+                    cum_loss = self.memory_replay(self.batch_size, self.batches)
+
+            # if we update every action, then more actions = more loss. This normalizes
             else:
                 cum_loss = cum_loss / num_actions
 
             if (i + 1) % self.render_frequency == 0:
-                self.simulator.render(self.model, os.path.join(self.render_path, 'epoch_%s' % i))
+                savepath = os.path.join(self.render_path, 'epoch_%s' % i)
+                self.simulator.render(self.model, savepath)
                 if self.use_visdom:
-                    simplotter.update(self.render_path)
+                    simplotter.update(savepath)
 
+            self.save_model(i)
             self.update_target(i)
             self.simulator.reset()
 
@@ -107,18 +115,22 @@ class DeepQLearner(Learner):
             if 'avg' in self.logger['reward']:
                 if len(self.logger['reward']['avg']):
                     self.update_scheduler(self.logger['reward']['avg'][-1]) # the plateeau scheduler needs a validation score
-                    if self.logger['reward']['avg'][-1] >= 150:
-                        self.simulator.render(self.model, self.render_path)
-                        print('completed because good score!')
-                        break
+
+            idx = min(len(self.logger['reward']), 100)
+            rew = self.logger['reward']['reward'][:idx]
+            if np.mean(rew) >= 195 and len(self.logger['reward']) >= 100:
+                print('goal achieved')
+                break
 
     def choose_action(self, state, explore_val):
         num = random.uniform(0, 1)
         if num > explore_val:
             action = self.model(state)
             action = torch.argmax(action).detach().cpu().item()
+
         else:
             action = self.simulator.rand_action()
+
         return action
 
     # from pytorch documentation
@@ -146,7 +158,7 @@ class DeepQLearner(Learner):
             experienced_values = torch.gather(modeled, 1, actions.unsqueeze(1))
 
             # get score with target network
-            target_values = torch.zeros(size, device=self.device)
+            target_values = torch.zeros(size, device=self.model.device)
             target_values[~ done] = torch.max(self.target_model(nonfinal_next), dim=1).values.float()
             target_values = (target_values * self.gamma) + rewards
 
@@ -156,7 +168,6 @@ class DeepQLearner(Learner):
             # optimize
             self.optimizer.zero_grad()
             loss.backward()
-            self.clampgrad(self.model.parameters())
             self.optimizer.step()
 
             cumulative_loss += loss.item()

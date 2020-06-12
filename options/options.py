@@ -28,10 +28,17 @@ def merge(source, dest):
 
 class Options:
 
-    def __init__(self, *data_list):
-        DEFAULT_CONFIG = osp.join(CONFIGS, 'base.yaml')
-        self.args = self._loadyaml(DEFAULT_CONFIG)
-        self.args = self.loadargs(*data_list)
+    def __init__(self, options_paths=DEFAULT_CONFIG):
+        args = []
+        if isinstance(options_paths, str):
+            options_paths = [options_paths]
+        for path in options_paths:
+            args.append(self._loadyaml(path))
+        source = args[0]
+        if len(args) > 1:
+            for arg in args[1:]:
+                source = merge(source, arg)
+        self.args = source
 
     def _loadyaml(self, data):
 
@@ -42,23 +49,16 @@ class Options:
             out = {}
         return defaultdict(dict, out)
 
-    def loadargs(self, *data_list):
-        if len(data_list) == 0:
-            return self.args
-        for data in data_list:
-            if isinstance(data, str):
-                moreargs = self._loadyaml(data)
-            elif isinstance(data, dict):
-                moreargs = data
-            return merge(moreargs, self.args)
-
     def __str__(self):
         return printargs(self.args)
 
 class QLearnerOptions(Options):
 
-    def __init__(self, *data_list):
-        super(QLearnerOptions, self).__init__()
-        DEFAULT_CONFIG = osp.join(CONFIGS, 'qlearner.yaml')
-        self.args = self.loadargs(DEFAULT_CONFIG, *data_list)
+    def __init__(self, options_paths=None):
+        DEFAULT_CONFIG = os.path.join(CONFIGS, 'base.yaml')
+        if options_paths is None:
+            paths = [DEFAULT_CONFIG, osp.join(CONFIGS, 'qlearner.yaml')]
+        else:
+            paths = options_paths
+        super(QLearnerOptions, self).__init__(paths)
 
