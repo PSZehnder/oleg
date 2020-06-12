@@ -9,6 +9,13 @@ coworker (Tetris is from Russia). So OLEG became the shorthand for my reinforcem
 
 OLEG is a complete rewrite of my original [DeepTetris3d](https://github.com/PSZehnder/DeepTetris3d) project. It is intended to be flexible and implement a variety of models and algorithms for any simulator environment. My goal is to solve every [OpenAI Gym](https://gym.openai.com/) as well as some custom implemented games.
 
+# Examples
+
+The config files are located in the examples directory. The python scripts to actually do the training are in the root directory.
+
+## Cartpole
+![](examples/cartpole/cartpole.gif)
+
 # Intended features (strikethrough denotes ~done~)
 + Automatic architecture selection for OpenAI Gyms
 + ~Support for all OpenAI Gyms~
